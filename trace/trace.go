@@ -3,10 +3,13 @@ package trace
 import (
 	"bytes"
 	"fmt"
+	"library/errors"
 	"library/log"
 
 	"runtime"
 )
+
+var callers = runtime.Callers
 
 func Save(args ...any) {
 	frame := getPreviousFrame()
@@ -23,10 +26,20 @@ func Save(args ...any) {
 }
 
 func getPreviousFrame() runtime.Frame {
-	pcs := make([]uintptr, 2)
-	n := runtime.Callers(3, pcs)
-	frames := runtime.CallersFrames(pcs[:n])
-
+	frames, _ := getFrames(3)
 	frame, _ := frames.Next()
 	return frame
+}
+
+func getFrames(size int) (*runtime.Frames, error) {
+	minSizeValue, maxSizeValue := 1, 1_000
+	if size < 1 || size > 1_000 {
+		return nil, errors.NewWrongValueRangeError(size, minSizeValue, maxSizeValue)
+	}
+	pcs := make([]uintptr, size)
+	n := runtime.Callers(0, pcs)
+	if size == n {
+		return getFrames(size * 2)
+	}
+	return runtime.CallersFrames(pcs[:n]), nil
 }

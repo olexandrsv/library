@@ -11,6 +11,20 @@ type CustomError interface {
 	error
 }
 
+type err struct {
+	msg string
+}
+
+func New(msg string) error {
+	return &err{
+		msg: msg,
+	}
+}
+
+func (e *err) Error() string {
+	return e.msg
+}
+
 type customError struct {
 	originalErr error
 	message     string

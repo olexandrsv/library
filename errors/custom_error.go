@@ -4,6 +4,17 @@ import (
 	"fmt"
 )
 
+type WrongValueRangeError struct{
+	CustomError
+}
+
+func NewWrongValueRangeError[T any](value, minValue, maxValue T) WrongFieldTypeErr{
+	msg := fmt.Sprintf("variable is expected in range '%v' and '%v', but got '%v'", minValue, maxValue, value)
+	return WrongFieldTypeErr{
+		CustomError: NewCustomError(nil, msg, NewInternalError()),
+	}
+}
+
 type ParsingError struct {
 	CustomError
 }

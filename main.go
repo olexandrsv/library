@@ -36,7 +36,8 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := req.Err()
 	if err != nil {
-		error_handler.HandleError(req.Err(), w)
+		fmt.Printf("type: %T", err)
+		error_handler.HandleError(err, w)
 		return
 	}
 

@@ -36,17 +36,18 @@ func getCookie[T any](c *Cookie, name string, convert func(string) (T, error)) *
 
 	cookie, err := c.r.Cookie(name)
 	if err == http.ErrNoCookie {
-		return NewRequestBuilder[T](c.h).
-			WithFatalError(errors.NewFieldNotExistsErr(name)).Create()
+		c.h.AddFatalError(errors.NewFieldNotExistsErr(name))
+		return NewRequestBuilder[T](c.h).Create()
 	}
 
 	v, err := convert(cookie.Value)
 	if e, ok := err.(errors.WrongTypeErr); ok {
-		return NewRequestBuilder[T](c.h).
-			WithError(errors.NewWrongFieldTypeErr(name, e.Type)).Create()
+		c.h.AddError(errors.NewWrongFieldTypeErr(name, e.Type))
+		return NewRequestBuilder[T](c.h).Create()
 	}
 	if err != nil {
-		return NewRequestBuilder[T](c.h).WithError(errors.NewUnknownErr(err)).Create()
+		c.h.AddError(errors.NewUnknownErr(err))
+		return NewRequestBuilder[T](c.h).Create()
 	}
 
 	return NewRequestBuilder[T](c.h).WithValue(v).Create()
