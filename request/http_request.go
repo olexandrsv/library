@@ -8,8 +8,9 @@ import (
 
 type HttpRequest interface {
 	ParseForm() error
-	GetValue(name string) ([]string, bool)
-	GetFile(name string) ([]*multipart.FileHeader, bool)
+	GetValue(string) ([]string, bool)
+	GetFile(string) ([]*multipart.FileHeader, bool)
+	Cookie(string) (*http.Cookie, error)
 }
 
 type httpRequest struct {
@@ -41,10 +42,15 @@ func (r *httpRequest) GetFile(name string) ([]*multipart.FileHeader, bool) {
 	return values, ok
 }
 
+func (r *httpRequest) Cookie(name string) (*http.Cookie, error) {
+	return r.r.Cookie(name)
+}
+
 type MockHttpRequest struct {
 	MockParseForm func() error
 	MockGetValue  func(name string) ([]string, bool)
 	MockGetFile   func(name string) ([]*multipart.FileHeader, bool)
+	MockCookie    func(string) (*http.Cookie, error)
 }
 
 func (c *MockHttpRequest) ParseForm() error {
@@ -57,4 +63,8 @@ func (c *MockHttpRequest) GetValue(name string) ([]string, bool) {
 
 func (c *MockHttpRequest) GetFile(name string) ([]*multipart.FileHeader, bool) {
 	return c.MockGetFile(name)
+}
+
+func (c *MockHttpRequest) Cookie(name string) (*http.Cookie, error) {
+	return c.MockCookie(name)
 }

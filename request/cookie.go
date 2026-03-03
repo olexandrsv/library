@@ -6,13 +6,13 @@ import (
 )
 
 type Cookie struct {
-	r *http.Request
+	r HttpRequest
 	h errors.ErrorContainer
 }
 
 func NewCookie(r *http.Request, h errors.ErrorContainer) *Cookie {
 	return &Cookie{
-		r: r,
+		r: newHttpRequest(r),
 		h: h,
 	}
 }
@@ -37,6 +37,10 @@ func getCookie[T any](c *Cookie, name string, convert func(string) (T, error)) *
 	cookie, err := c.r.Cookie(name)
 	if err == http.ErrNoCookie {
 		c.h.AddFatalError(errors.NewFieldNotExistsErr(name))
+		return NewRequestBuilder[T](c.h).Create()
+	}
+	if err != nil {
+		c.h.AddFatalError(errors.NewUnknownErr(err))
 		return NewRequestBuilder[T](c.h).Create()
 	}
 
