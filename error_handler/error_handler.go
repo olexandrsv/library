@@ -25,7 +25,7 @@ func HandleError(err error, w http.ResponseWriter) {
 	w.Write([]byte(userMsg))
 	programmerMsg, _ := json.MarshalIndent(*l, "", " ")
 	fmt.Println(string(programmerMsg))
-	log.Error(string(programmerMsg))
+	log.Error(errors.New(string(programmerMsg)))
 }
 
 func handleError(err error, userError string, programmerError *ErrorList) (string, *ErrorList) {

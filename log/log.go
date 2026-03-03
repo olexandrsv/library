@@ -51,8 +51,10 @@ func Trace(msg string) {
 	l.traceFile.print(msg)
 }
 
-func Error(msg string) {
-	l.logFile.print(msg)
+func Error(err error) {
+	if err != nil {
+		l.logFile.print(err.Error())
+	}
 }
 
 func Endpoint(w http.ResponseWriter, r *http.Request) {
