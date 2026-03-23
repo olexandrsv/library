@@ -2,12 +2,19 @@ package log
 
 import (
 	"fmt"
-	"library/errors"
 	"net/http"
-	"os"
 )
 
-var l *logger
+type Logger interface {
+	Info(string)
+	Infof(string, ...any)
+	Trace(string)
+	Error(error)
+	ReadLogs() (string, error)
+	ReadTraces() (string, error)
+}
+
+var l Logger
 
 type logger struct {
 	logFile   LogFile
@@ -30,38 +37,62 @@ func Init() error {
 	return nil
 }
 
-func openFile(path string) (*os.File, error) {
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+func InitMock(mock MockLog) {
+	l = &mock
+}
+
+func (l *logger) Info(msg string) {
+	l.logFile.print(msg)
+	fmt.Println(msg)
+}
+
+func (l *logger) Infof(pattern string, values ...any) {
+	msg := fmt.Sprintf(pattern, values...)
+	l.logFile.print(msg)
+	fmt.Println(msg)
+}
+
+func (l *logger) Trace(msg string) {
+	l.traceFile.print(msg)
+	fmt.Println(msg)
+}
+
+func (l *logger) Error(err error) {
 	if err != nil {
-		return nil, errors.NewFileErr(err, path, errors.NewInternalError())
+		l.logFile.print(err.Error())
+		fmt.Println(err.Error())
 	}
-	return file, nil
+}
+
+func (l *logger) ReadLogs() (string, error) {
+	return l.logFile.read()
+}
+
+func (l *logger) ReadTraces() (string, error) {
+	return l.traceFile.read()
 }
 
 func Info(msg string) {
-	l.logFile.print(msg)
+	l.Info(msg)
 }
 
 func Infof(pattern string, values ...any) {
-	msg := fmt.Sprintf(pattern, values...)
-	l.logFile.print(msg)
+	l.Infof(pattern, values...)
 }
 
 func Trace(msg string) {
-	l.traceFile.print(msg)
+	l.Trace(msg)
 }
 
 func Error(err error) {
-	if err != nil {
-		l.logFile.print(err.Error())
-	}
+	l.Error(err)
 }
 
 func Endpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	body, err := l.logFile.read()
+	body, err := l.ReadLogs()
 	if err != nil {
 		fmt.Printf("log.Endpoint l.read() error: %+v", err)
 		return
@@ -76,7 +107,7 @@ func TraceEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	body, err := l.traceFile.read()
+	body, err := l.ReadTraces()
 	if err != nil {
 		fmt.Printf("log.TraceEndpoint l.traceFile.read() error: %+v", err)
 		return

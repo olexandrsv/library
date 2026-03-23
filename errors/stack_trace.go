@@ -2,70 +2,37 @@ package errors
 
 import (
 	"fmt"
-	"runtime"
+	"library/slices"
+	"library/trace"
 )
 
 type Tracer interface {
 	Trace() []string
 }
 
-type trace struct {
+type tracer struct {
 	msgs []string
 }
 
-func (t *trace) Trace() []string {
+func (t *tracer) Trace() []string {
 	return t.msgs
 }
 
 func newTrace() Tracer {
-	return &trace{
+	return &tracer{
 		msgs: getStack(),
 	}
 }
 
 func getStack() []string {
-	pcs := make([]uintptr, 10)
-	n := runtime.Callers(2, pcs)
-	frames := runtime.CallersFrames(pcs[:n])
-	var records []string
-
-	for {
-		frame, more := frames.Next()
-		record := fmt.Sprintf("%s  %s %d", frame.Function, frame.File, frame.Line)
-		records = append(records, record)
-		if !more {
-			break
-		}
-	}
+	frames := trace.New(-1).Frames()
+	records := slices.Map(frames, func(frame trace.Frame) string {
+		return frameToRecord(frame)
+	})
 
 	return records
 }
 
-// type stackTracer interface {
-// 	StackTrace() errors.StackTrace
-// }
-
-// type tracesSkiper struct {
-// 	err  error
-// 	skip int
-// }
-
-// func newTracesSkiper(err error, skip int) tracesSkiper {
-// 	return tracesSkiper{
-// 		err:  err,
-// 		skip: skip,
-// 	}
-// }
-
-// func (ts tracesSkiper) Error() string {
-// 	tracer, ok := ts.err.(stackTracer)
-// 	if !ok {
-// 		return fmt.Sprintf("%+v\n", ts.err)
-// 	}
-// 	trace := tracer.StackTrace()
-// 	if len(trace) < ts.skip {
-// 		return fmt.Sprintf("%+v\n", ts.err)
-// 	}
-// 	trace = trace[ts.skip:]
-// 	return fmt.Sprintf("%+v\n", trace)
-// }
+func frameToRecord(frame trace.Frame) string {
+	return fmt.Sprintf("%s %d  %s", frame.File(), frame.Line(), frame.Function())
+}

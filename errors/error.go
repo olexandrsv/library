@@ -1,6 +1,9 @@
 package errors
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type CustomError interface {
 	OriginalErr() error
@@ -19,6 +22,11 @@ func New(msg string) error {
 	return &err{
 		msg: msg,
 	}
+}
+
+func Newf(pattern string, args ...any) error {
+	msg := fmt.Sprintf(pattern, args...)
+	return New(msg)
 }
 
 func (e *err) Error() string {

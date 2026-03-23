@@ -31,3 +31,7 @@ func Map[T, K any](slice []T, f func(t T) K) []K {
 func DeleteFunc[T any](slice []T, f func(t T) bool) []T {
 	return slices.DeleteFunc(slice, f)
 }
+
+type Iterator[T any] interface {
+	Next() (T, bool)
+}

@@ -40,19 +40,31 @@ func CompareCustomErrors(t *testing.T, variableName string, received, expected e
 	})
 }
 
-func CompareSlices[T comparable](t *testing.T, variableName string, received, expected []T) {
-	compare(t, "slice", variableName, received, expected, func(received, expected []T) bool {
-		if len(received) != len(expected) {
+func isSlicesEqual[T, K any](received []T, expected []K, isEqual func(T, K) bool) bool {
+	if (received == nil) != (expected == nil) {
+		return false
+	}
+	if len(received) != len(expected) {
+		return false
+	}
+	for i := range received {
+		if !isEqual(received[i], expected[i]) {
 			return false
 		}
-		for _, v := range expected {
-			for _, v2 := range received {
-				if v != v2 {
-					return false
-				}
-			}
-		}
-		return true
+	}
+	return true
+}
+
+func CompareSlicesWithFunc[T, K any](t *testing.T, variableName string, received []T, expected []K, isEqual func(T, K) bool) {
+	if isSlicesEqual(received, expected, isEqual) {
+		return
+	}
+	t.Errorf("unexpected slice %s: got '%#v', expected '%#v'\n", variableName, received, expected)
+}
+
+func CompareSlices[T comparable](t *testing.T, variableName string, received, expected []T) {
+	CompareSlicesWithFunc(t, variableName, received, expected, func(receivedItem, expectedItem T) bool {
+		return receivedItem == expectedItem
 	})
 }
 
@@ -62,6 +74,6 @@ func compare[T any](
 	received, expected T,
 	compare func(T, T) bool) {
 	if ok := compare(received, expected); !ok {
-		t.Errorf("unexpected %s %s: got '%+v', expected '%+v'\n", kind, variableName, received, expected)
+		t.Errorf("unexpected %s %s: got '%#v', expected '%#v'\n", kind, variableName, received, expected)
 	}
 }

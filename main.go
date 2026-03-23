@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"library/error_handler"
 	"library/log"
+	"library/point"
 	"library/request"
-	"library/trace"
 	"net/http"
 )
 
@@ -27,7 +27,7 @@ func testRequest() {
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
-	trace.Save(w, r)
+	point.Save(w, r)
 	function1(1, 2)
 	req := request.New(r)
 	n := req.Form.GetInt("n").Do()
@@ -44,6 +44,6 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(n, m, s)
 }
 
-func function1(n, m int){
-	trace.Save(n, m)
+func function1(n, m int) {
+	point.Save(n, m)
 }

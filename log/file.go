@@ -19,6 +19,14 @@ type file struct {
 	file *os.File
 }
 
+func openFile(path string) (*os.File, error) {
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return nil, errors.NewFileErr(err, path, errors.NewInternalError())
+	}
+	return file, nil
+}
+
 func newFile(f *os.File) *file {
 	return &file{
 		file: f,
