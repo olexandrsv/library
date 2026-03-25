@@ -1,62 +1,11 @@
 package slices
 
 import (
+	"library/errors"
 	"library/test"
 	"strconv"
 	"testing"
 )
-
-type mockIterator[T any] struct {
-	mockNext func() (T, bool)
-}
-
-func (iterator *mockIterator[T]) Next() (T, bool) {
-	return iterator.mockNext()
-}
-
-func TestIteratorToSlice(t *testing.T) {
-	testCases := []struct {
-		items         []int
-		expectedItems []int
-	}{
-		{
-			items:         []int{1, 2, 3},
-			expectedItems: []int{1, 2, 3},
-		},
-		{
-			items:         nil,
-			expectedItems: []int{0},
-		},
-		{
-			items:         []int{0},
-			expectedItems: []int{0},
-		},
-		{
-			items:         []int{0},
-			expectedItems: []int{0},
-		},
-	}
-
-	for _, testCase := range testCases {
-		i := 0
-		mockIterator := &mockIterator[int]{
-			mockNext: func() (int, bool) {
-				length := len(testCase.items) - 1
-				if i < 0 || i > length {
-					return 0, false
-				}
-				item := testCase.items[i]
-				i++
-				if i > length {
-					return item, false
-				}
-				return item, true
-			},
-		}
-		items := IteratorToSlice(mockIterator)
-		test.CompareSlices(t, "items", items, testCase.expectedItems)
-	}
-}
 
 type TestCase[T, K any] struct {
 	items         []T
@@ -123,26 +72,168 @@ func runMapTest[T, K comparable](t *testing.T, testCases []TestCase[T, K]) {
 	}
 }
 
-func TestIterator(t *testing.T){
-	testCases := []struct{
-		name string
-		items []int
-	}{
+type ConvertTestCase[T, K comparable] struct {
+	name          string
+	items         []T
+	expectedItems []K
+	convert       func(T) (K, error)
+	err           error
+}
+
+func TestConvert_StringToInt(t *testing.T) {
+	testCases := []ConvertTestCase[string, int]{
 		{
-			name: "test common slice",
-			items: []int{1, 2, 3},
+			name:          "check string to int",
+			items:         []string{"1", "2", "3"},
+			expectedItems: []int{1, 2, 3},
+			convert:       strconv.Atoi,
+			err:           nil,
 		},
 		{
-			name: "test nil items",
-			items: nil,
+			name:    "check string to int",
+			items:   []string{"1s"},
+			convert: strconv.Atoi,
+			err:     errors.New(`strconv.Atoi: parsing "1s": invalid syntax`),
 		},
 	}
-	_ = testCases
 
-	// for _, testCase := range testCases {
-	// 	t.Log(testCase.name)
-	// 	iterator := NewIterator(testCase.items)
-	// 	receivedItems := IteratorToSlice(iterator)
-	// 	test.CompareSlices(t, "items", receivedItems, testCase.items)
-	// }
+	runConvertTest(t, testCases)
+}
+
+type User struct {
+	Name    string
+	Surname string
+}
+
+type Author struct {
+	Name    string
+	Surname string
+}
+
+func TestConvert_StructToStruct(t *testing.T) {
+	err := errors.New("user convert error")
+	testCases := []ConvertTestCase[User, Author]{
+		{
+			name: "check struct to struct",
+			items: []User{
+				{
+					Name:    "Bob",
+					Surname: "Smith",
+				},
+				{
+					Name:    "Ben",
+					Surname: "Arnum",
+				},
+			},
+			expectedItems: []Author{
+				{
+					Name:    "Bob",
+					Surname: "Smith",
+				},
+				{
+					Name:    "Ben",
+					Surname: "Arnum",
+				},
+			},
+			convert: func(u User) (Author, error) {
+				return Author{
+					Name:    u.Name,
+					Surname: u.Surname,
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name: "check struct to struct",
+			items: []User{
+				{
+					Name:    "Bob",
+					Surname: "Smith",
+				},
+				{
+					Name:    "Ben",
+					Surname: "Arnum",
+				},
+			},
+			expectedItems: nil,
+			convert: func(u User) (Author, error) {
+				return Author{}, err
+			},
+			err: err,
+		},
+	}
+
+	runConvertTest(t, testCases)
+}
+
+func TestConvert_EdgeCases(t *testing.T) {
+	testCases := []ConvertTestCase[string, int]{
+		{
+			name:          "check nil",
+			items:         nil,
+			expectedItems: []int{},
+			convert:       strconv.Atoi,
+			err:           nil,
+		},
+		{
+			name:          "check empty",
+			items:         []string{},
+			expectedItems: []int{},
+			convert:       strconv.Atoi,
+			err:           nil,
+		},
+	}
+
+	runConvertTest(t, testCases)
+}
+
+func runConvertTest[T, K comparable](t *testing.T, testCases []ConvertTestCase[T, K]) {
+	for _, testCase := range testCases {
+		t.Log(testCase.name)
+		receivedItems, err := Convert(testCase.items, testCase.convert)
+		t.Log(err)
+		test.CompareSlices(t, "receivedItems", receivedItems, testCase.expectedItems)
+		test.CompareCustomErrors(t, "err", err, testCase.err)
+	}
+}
+
+func TestFilter(t *testing.T) {
+	testCases := []struct {
+		name          string
+		items         []int
+		expectedItems []int
+		expectedError error
+		fun           func(int) bool
+	}{
+		{
+			name:          "check ususal case",
+			items:         []int{1, 2, 3},
+			expectedItems: []int{1, 3},
+			fun: func(i int) bool {
+				return i != 2
+			},
+		},
+		{
+			name:          "check when items is nil",
+			items:         nil,
+			expectedItems: nil,
+			fun:           func(i int) bool {
+				return true
+			},
+		},
+		{
+			name:          "check when fun is nil",
+			items:         []int{1, 2, 3},
+			expectedItems: nil,
+			fun:           nil,
+			expectedError: errors.NewNilErr("f", errors.NewInternalError()),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.name)
+		receivedItesm, err := Filter(testCase.items, testCase.fun)
+		test.CompareSlices(t, "receivedItems", receivedItesm, testCase.expectedItems)
+		test.CompareCustomErrors(t, "err", err, testCase.expectedError)
+	}
 }

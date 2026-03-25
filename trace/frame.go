@@ -6,6 +6,7 @@ type Frame interface {
 	File() string
 	Line() int
 	Function() string
+	Format(func(Frame) string) string
 	fmt.Stringer
 }
 
@@ -13,6 +14,7 @@ type MockFrame struct {
 	MockFile     func() string
 	MockLine     func() int
 	MockFunction func() string
+	MockFormat   func(func(Frame) string) string
 	MockString   func() string
 }
 
@@ -26,6 +28,10 @@ func (f *MockFrame) Line() int {
 
 func (f *MockFrame) Function() string {
 	return f.Function()
+}
+
+func (f *MockFrame) Format(formatter func(Frame) string) string {
+	return f.MockFormat(formatter)
 }
 
 func (f *MockFrame) String() string {
@@ -56,6 +62,10 @@ func (f *frame) Line() int {
 
 func (f *frame) Function() string {
 	return f.function
+}
+
+func (f *frame) Format(formatter func(Frame) string) string {
+	return formatter(f)
 }
 
 func (f *frame) String() string {

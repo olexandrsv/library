@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-type WrongValueRangeError struct{
+type WrongValueRangeError struct {
 	CustomError
 }
 
-func NewWrongValueRangeError[T any](value, minValue, maxValue T) WrongFieldTypeErr{
+func NewWrongValueRangeError[T any](value, minValue, maxValue T) *WrongFieldTypeErr {
 	msg := fmt.Sprintf("variable is expected in range '%v' and '%v', but got '%v'", minValue, maxValue, value)
-	return WrongFieldTypeErr{
+	return &WrongFieldTypeErr{
 		CustomError: NewCustomError(nil, msg, NewInternalError()),
 	}
 }
@@ -19,9 +19,9 @@ type ParsingError struct {
 	CustomError
 }
 
-func NewParsingError(name string, kind string, resp Response) ParsingError {
+func NewParsingError(name string, kind string, resp Response) *ParsingError {
 	msg := fmt.Sprintf("error while parsing field '%s' with type '%s'", name, kind)
-	return ParsingError{
+	return &ParsingError{
 		CustomError: NewCustomError(nil, msg, resp),
 	}
 }
@@ -30,10 +30,10 @@ type WrongValueSizeErr struct {
 	CustomError
 }
 
-func NewWrongValueSizeError(name string, size int, expectedSize string) WrongValueSizeErr {
+func NewWrongValueSizeError(name string, size int, expectedSize string) *WrongValueSizeErr {
 	msg := fmt.Sprintf("value '%s' has size '%d', while expected size '%s'",
 		name, size, expectedSize)
-	return WrongValueSizeErr{
+	return &WrongValueSizeErr{
 		CustomError: NewCustomError(nil, msg, NewResponse(msg, 400)),
 	}
 }
@@ -42,9 +42,9 @@ type FieldNotExistsErr struct {
 	CustomError
 }
 
-func NewFieldNotExistsErr(name string) FieldNotExistsErr {
+func NewFieldNotExistsErr(name string) *FieldNotExistsErr {
 	msg := fmt.Sprintf("field %s not exists", name)
-	return FieldNotExistsErr{
+	return &FieldNotExistsErr{
 		CustomError: NewCustomError(nil, msg, NewResponse(msg, 0)),
 	}
 }
@@ -54,9 +54,9 @@ type WrongTypeErr struct {
 	CustomError
 }
 
-func NewWrongTypeErr(fieldType string) WrongTypeErr {
+func NewWrongTypeErr(fieldType string) *WrongTypeErr {
 	msg := "can't convert to type " + fieldType
-	return WrongTypeErr{
+	return &WrongTypeErr{
 		Type:        fieldType,
 		CustomError: NewCustomError(nil, msg, NewResponse(msg, 400)),
 	}
@@ -68,9 +68,9 @@ type WrongFieldTypeErr struct {
 	CustomError
 }
 
-func NewWrongFieldTypeErr(name, fieldType string) WrongFieldTypeErr {
+func NewWrongFieldTypeErr(name, fieldType string) *WrongFieldTypeErr {
 	msg := fmt.Sprintf("can't convert field %s to type %s", name, fieldType)
-	return WrongFieldTypeErr{
+	return &WrongFieldTypeErr{
 		Name:        name,
 		Type:        fieldType,
 		CustomError: NewCustomError(nil, msg, NewResponse(msg, 400)),
@@ -81,33 +81,43 @@ type UnknownErr struct {
 	CustomError
 }
 
-func NewUnknownErr(err error) UnknownErr {
-	return UnknownErr{
+func NewUnknownErr(err error) *UnknownErr {
+	return &UnknownErr{
 		CustomError: NewCustomError(err, "unknown error", NewInternalError()),
 	}
 }
-
 
 type DataParseErr struct {
 	DataType string
 	CustomError
 }
 
-func NewDataParseErr(dataType string) DataParseErr {
+func NewDataParseErr(dataType string) *DataParseErr {
 	msg := fmt.Sprintf("can't parse data: %s", dataType)
-	return DataParseErr{
-		DataType: dataType,
+	return &DataParseErr{
+		DataType:    dataType,
 		CustomError: NewCustomError(nil, msg, NewResponse(msg, 400)),
 	}
 }
 
-type NewFileError struct{
+type NewFileError struct {
 	CustomError
 }
 
-func NewFileErr(err error, filePath string, resp Response) NewFileError {
+func NewFileErr(err error, filePath string, resp Response) *NewFileError {
 	msg := fmt.Sprintf("got error while working with '%s' file", filePath)
-	return NewFileError{
+	return &NewFileError{
 		CustomError: NewCustomError(err, msg, resp),
+	}
+}
+
+type NewNilError struct {
+	CustomError
+}
+
+func NewNilErr(variableName string, response Response) *NewNilError {
+	msg := fmt.Sprintf("variable '%s' can't be nil", variableName)
+	return &NewNilError{
+		CustomError: NewCustomError(nil, msg, response),
 	}
 }

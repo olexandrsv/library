@@ -3,12 +3,13 @@ package trace
 import (
 	"bytes"
 	"fmt"
-	"library/slices"
 	"runtime"
+	"testing"
 )
 
 type Trace interface {
 	Frames() []Frame
+	Format(func(Frame) string) []string
 	fmt.Stringer
 }
 
@@ -34,7 +35,7 @@ type mockTrace struct {
 	mockFrames       func() []Frame
 	mockString       func() string
 	mockLoadFrames   func(framesNeeded int)
-	mockGetFrames    func(framesNeeded int) slices.Iterator[runtime.Frame]
+	mockGetFrames    func(framesNeeded int) TraceIterator[runtime.Frame]
 	mockGetNFrames   func(framesNeeded int) *runtime.Frames
 	mockGetAllFrames func() *runtime.Frames
 }
@@ -50,6 +51,14 @@ func (t *trace) Frames() []Frame {
 		return t.mockFrames()
 	}
 	return t.frames
+}
+
+func (t *trace) Format(formatter func(Frame) string) []string {
+	formatted := make([]string, 0, len(t.frames))
+	for _, frame := range t.frames {
+		formatted = append(formatted, frame.Format(formatter))
+	}
+	return formatted
 }
 
 func (t *trace) String() string {
@@ -73,14 +82,14 @@ func (t *trace) loadFrames(framesNeeded int) {
 		return
 	}
 	runtimeFrames := t.getFrames(framesNeeded)
-	frames := slices.IteratorToSlice(runtimeFrames)
-	t.frames = slices.Map(frames, func(frame runtime.Frame) Frame {
-		return NewFrame(frame.File, frame.Line, frame.Function)
-	})
+	frames := IteratorToSlice(runtimeFrames)
+	for _, frame := range frames {
+		t.frames = append(t.frames, NewFrame(frame.File, frame.Line, frame.Function))
+	}
 }
 
-func (t *trace) getFrames(framesNeeded int) slices.Iterator[runtime.Frame] {
-	if t.mockGetFrames != nil {
+func (t *trace) getFrames(framesNeeded int) TraceIterator[runtime.Frame] {
+	if testing.Testing() && t.mockGetFrames != nil {
 		return t.mockGetFrames(framesNeeded)
 	}
 	if framesNeeded < -1 {
@@ -93,7 +102,7 @@ func (t *trace) getFrames(framesNeeded int) slices.Iterator[runtime.Frame] {
 }
 
 func (t *trace) getNFrames(framesNeeded int) *runtime.Frames {
-	if t.mockGetNFrames != nil {
+	if testing.Testing() && t.mockGetNFrames != nil {
 		return t.mockGetNFrames(framesNeeded)
 	}
 	if framesNeeded < 1 {
@@ -105,7 +114,7 @@ func (t *trace) getNFrames(framesNeeded int) *runtime.Frames {
 }
 
 func (t *trace) getAllFrames() *runtime.Frames {
-	if t.mockGetAllFrames != nil {
+	if testing.Testing() && t.mockGetAllFrames != nil {
 		return t.mockGetAllFrames()
 	}
 	defaultFramesAmount := 10

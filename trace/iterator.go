@@ -1,17 +1,21 @@
-package slices
+package trace
 
-type iterator[T any] struct {
+type TraceIterator[T any] interface {
+	Next() (T, bool)
+}
+
+type traceIterator[T any] struct {
 	items    []T
 	position int
 }
 
-func NewIterator[T any](items []T) Iterator[T] {
-	return &iterator[T]{
+func NewIterator[T any](items []T) TraceIterator[T] {
+	return &traceIterator[T]{
 		items: items,
 	}
 }
 
-func (i *iterator[T]) Next() (T, bool) {
+func (i *traceIterator[T]) Next() (T, bool) {
 	var item T
 	var hasNext bool
 	if i.position+1 <= len(i.items)-1 {
@@ -24,7 +28,7 @@ func (i *iterator[T]) Next() (T, bool) {
 	return item, hasNext
 }
 
-func IteratorToSlice[T any](iterator Iterator[T]) []T {
+func IteratorToSlice[T any](iterator TraceIterator[T]) []T {
 	if iterator == nil {
 		return nil
 	}

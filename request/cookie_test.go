@@ -13,21 +13,24 @@ func TestGetCookie(t *testing.T) {
 	convertErr := errors.New("convert error")
 
 	testCases := []struct {
+		name          string
 		fatalErr      func() error
 		cookie        func(string) (*http.Cookie, error)
 		addFatalErr   func(error)
 		addError      func(error)
 		convert       func(string) (int, error)
-		name          string
+		fieldName     string
 		expectedValue int
 	}{
 		{
+			name: "check with fatalErr",
 			fatalErr: func() error {
 				return fatalErr
 			},
 			expectedValue: 0,
 		},
 		{
+			name: "check with FieldNotExistsErr error from Cookie()",
 			fatalErr: func() error {
 				return nil
 			},
@@ -37,9 +40,10 @@ func TestGetCookie(t *testing.T) {
 			addFatalErr: func(err error) {
 				test.CompareCustomErrors(t, "fatalErr", err, errors.NewFieldNotExistsErr("name"))
 			},
-			name: "name",
+			fieldName: "name",
 		},
 		{
+			name: "check with UnknownErr error from Cookie()",
 			fatalErr: func() error {
 				return nil
 			},
@@ -49,9 +53,10 @@ func TestGetCookie(t *testing.T) {
 			addFatalErr: func(err error) {
 				test.CompareCustomErrors(t, "fatalErr", err, errors.NewUnknownErr(cookieErr))
 			},
-			name: "name",
+			fieldName: "name",
 		},
 		{
+			name: "check with WrongTypeErr error from convert()",
 			fatalErr: func() error {
 				return nil
 			},
@@ -67,9 +72,10 @@ func TestGetCookie(t *testing.T) {
 			addError: func(err error) {
 				test.CompareCustomErrors(t, "err", err, errors.NewWrongFieldTypeErr("name", "string"))
 			},
-			name: "name",
+			fieldName: "name",
 		},
 		{
+			name: "check with simple error from convert()",
 			fatalErr: func() error {
 				return nil
 			},
@@ -87,6 +93,7 @@ func TestGetCookie(t *testing.T) {
 			},
 		},
 		{
+			name: "check normal case",
 			fatalErr: func() error {
 				return nil
 			},
@@ -104,6 +111,7 @@ func TestGetCookie(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		t.Log(testCase.name)
 		cookie := &Cookie{
 			r: &MockHttpRequest{
 				MockCookie: testCase.cookie,
@@ -115,7 +123,7 @@ func TestGetCookie(t *testing.T) {
 			},
 		}
 
-		request := getCookie(cookie, testCase.name, testCase.convert)
+		request := getCookie(cookie, testCase.fieldName, testCase.convert)
 		test.Compare(t, "value", request.value, testCase.expectedValue)
 	}
 }

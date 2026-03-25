@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"library/trace"
 	"time"
 )
 
@@ -9,7 +10,7 @@ type CustomError interface {
 	OriginalErr() error
 	Message() string
 	Time() time.Time
-	Tracer
+	Trace() []string
 	Response
 	error
 }
@@ -37,7 +38,7 @@ type customError struct {
 	originalErr error
 	message     string
 	t           time.Time
-	Tracer
+	trace       []string
 	Response
 	error
 }
@@ -47,8 +48,10 @@ func NewCustomError(err error, message string, userMessage Response) CustomError
 		originalErr: err,
 		message:     message,
 		t:           time.Now(),
-		Tracer:      newTrace(),
-		Response:    userMessage,
+		trace: trace.New(-1).Format(func(f trace.Frame) string {
+			return fmt.Sprintf("%s %d %s", f.File(), f.Line(), f.Function())
+		}),
+		Response: userMessage,
 	}
 }
 
@@ -66,4 +69,8 @@ func (err customError) OriginalErr() error {
 
 func (err customError) Time() time.Time {
 	return err.t
+}
+
+func (err customError) Trace() []string {
+	return err.trace
 }

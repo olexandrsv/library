@@ -84,7 +84,7 @@ func get[T any](f Form, name string, convert func(string) (T, error)) *ValueRequ
 
 	rawValue := values[0]
 	value, err := convert(rawValue)
-	if e, ok := err.(errors.WrongTypeErr); ok {
+	if e, ok := err.(*errors.WrongTypeErr); ok {
 		f.AddError(errors.NewWrongFieldTypeErr(name, e.Type))
 		return NewRequestBuilder[T](f).Create()
 	}
@@ -155,7 +155,7 @@ func getSlice[T any](f Form, name string, convert func(string) (T, error)) *Valu
 	}
 
 	values, err := slices.Convert(rawValues, convert)
-	if e, ok := err.(errors.WrongTypeErr); ok {
+	if e, ok := err.(*errors.WrongTypeErr); ok {
 		f.AddError(errors.NewWrongFieldTypeErr(name, e.Type))
 		return NewRequestBuilder[[]T](f).Create()
 	}

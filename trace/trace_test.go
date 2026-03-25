@@ -1,11 +1,50 @@
 package trace
 
 import (
-	"library/slices"
+	"fmt"
 	"library/test"
+	"os"
 	"runtime"
+	"strconv"
 	"testing"
 )
+
+func TestFormat(t *testing.T) {
+	testCases := []struct {
+		items         []int
+		expectedItems []string
+		formatter     func(Frame) string
+	}{
+		{
+			items:         []int{1, 2, 3},
+			expectedItems: []string{"1", "2", "3"},
+		},
+		{
+			items:         nil,
+			expectedItems: []string{},
+		},
+		{
+			items:         []int{},
+			expectedItems: []string{},
+		},
+	}
+
+	for _, testCase := range testCases {
+		mockFrames := make([]Frame, 0, len(testCase.items))
+		for _, item := range testCase.items {
+			mockFrames = append(mockFrames, &MockFrame{
+				MockFormat: func(f func(Frame) string) string {
+					return strconv.Itoa(item)
+				},
+			})
+		}
+		trace := &trace{
+			frames: mockFrames,
+		}
+		formattedFrames := trace.Format(testCase.formatter)
+		test.CompareSlices(t, "formattedFrames", formattedFrames, testCase.expectedItems)
+	}
+}
 
 func mock3(fn func() *runtime.Frames) *runtime.Frames {
 	return mock2(fn)
@@ -20,32 +59,38 @@ func mock1(fn func() *runtime.Frames) *runtime.Frames {
 }
 
 func TestGetNFrames(t *testing.T) {
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	traceFile := fmt.Sprintf("%s/trace.go", dir)
+	traceTestFile := fmt.Sprintf("%s/trace_test.go", dir)
 	getNFrames := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace.go",
+		File:     traceFile,
 		Line:     72,
 		Function: "library/trace.(*trace).getNFrames",
 	}
 	fnFrame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Function: "library/trace.TestGetNFrames.func1",
 	}
 	mock1Frame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Line:     30,
 		Function: "library/trace.mock1",
 	}
 	mock2Frame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Line:     26,
 		Function: "library/trace.mock2",
 	}
 	mock3Frame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Line:     22,
 		Function: "library/trace.mock3",
 	}
 	TestGetNFrames := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Function: "library/trace.TestGetNFrames",
 	}
 	runnerFrame := &runtime.Frame{
@@ -198,7 +243,7 @@ func TestGetNFrames(t *testing.T) {
 			continue
 		}
 
-		s := slices.IteratorToSlice(frames)
+		s := IteratorToSlice(frames)
 		for i, f := range s {
 			exFrame := testCase.frames[i]
 			if f.File != exFrame.File || f.Line != exFrame.Line || f.Function != exFrame.Function {
@@ -212,41 +257,49 @@ func TestGetNFrames(t *testing.T) {
 }
 
 func TestGetAllFrames(t *testing.T) {
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	traceFile := fmt.Sprintf("%s/trace.go", dir)
+	traceTestFile := fmt.Sprintf("%s/trace_test.go", dir)
+	goRoot := runtime.GOROOT()
+
 	getAllFrames := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace.go",
+		File:     traceFile,
 		Line:     80,
 		Function: "library/trace.(*trace).getAllFrames",
 	}
 	fnFrame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Function: "library/trace.TestGetAllFrames.func1",
 	}
 	mock1Frame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Line:     30,
 		Function: "library/trace.mock1",
 	}
 	mock2Frame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Line:     26,
 		Function: "library/trace.mock2",
 	}
 	mock3Frame := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Line:     22,
 		Function: "library/trace.mock3",
 	}
 	TestGetNFrames := &runtime.Frame{
-		File:     "/home/george/IT/Projects/internal/library2/trace/trace_test.go",
+		File:     traceTestFile,
 		Function: "library/trace.TestGetAllFrames",
 	}
 	runnerFrame := &runtime.Frame{
-		File:     "/usr/local/go/src/testing/testing.go",
+		File:     goRoot + "/src/testing/testing.go",
 		Line:     2036,
 		Function: "testing.tRunner",
 	}
 	exitFrame := &runtime.Frame{
-		File:     "/usr/local/go/src/runtime/asm_amd64.s",
+		File:     goRoot + "/src/runtime/asm_amd64.s",
 		Line:     1771,
 		Function: "runtime.goexit",
 	}
@@ -316,7 +369,7 @@ func TestGetAllFrames(t *testing.T) {
 			continue
 		}
 
-		s := slices.IteratorToSlice(frames)
+		s := IteratorToSlice(frames)
 		for i, f := range s {
 			exFrame := testCase.frames[i]
 			if f.File != exFrame.File || f.Line != exFrame.Line || f.Function != exFrame.Function {
@@ -381,7 +434,7 @@ func TestGetFrames(t *testing.T) {
 		}
 		receivedFrames := trace.getFrames(testCase.framesNeeded)
 		if receivedFrames == nil && testCase.frames == nil {
-			return
+			continue
 		}
 		if receivedFrames.(*runtime.Frames) != testCase.frames {
 			t.Errorf("expected frames with value '%v', got '%v'", testCase.frames, receivedFrames)
@@ -403,44 +456,49 @@ func TestLoadFrames(t *testing.T) {
 	testCases := []struct {
 		name         string
 		framesNeeded int
-		getFrames    func(framesNeeded int) slices.Iterator[runtime.Frame]
+		getFrames    func(framesNeeded int) TraceIterator[runtime.Frame]
 		frames       []runtime.Frame
 	}{
 		{
+			name:         "check with framesNeeded 1",
 			framesNeeded: 1,
 			frames: []runtime.Frame{
 				frame1,
 			},
-			getFrames: func(framesNeeded int) slices.Iterator[runtime.Frame] {
+			getFrames: func(framesNeeded int) TraceIterator[runtime.Frame] {
 				test.Compare(t, "framesNeeded", framesNeeded, 1)
-				return slices.NewIterator([]runtime.Frame{frame1})
+				return NewIterator([]runtime.Frame{frame1})
 			},
 		},
 		{
+			name:         "check with framesNeeded 0",
 			framesNeeded: 0,
 			frames:       nil,
 		},
 		{
+			name:         "check with getFrames returning nil",
 			framesNeeded: 1,
-			frames:       []runtime.Frame{},
-			getFrames: func(framesNeeded int) slices.Iterator[runtime.Frame] {
+			frames:       nil,
+			getFrames: func(framesNeeded int) TraceIterator[runtime.Frame] {
 				test.Compare(t, "framesNeeded", framesNeeded, 1)
 				return nil
 			},
 		},
 		{
+			name:         "check with getFrames returning Iterator",
 			framesNeeded: 2,
 			frames: []runtime.Frame{
 				frame1, frame2,
 			},
-			getFrames: func(framesNeeded int) slices.Iterator[runtime.Frame] {
+			getFrames: func(framesNeeded int) TraceIterator[runtime.Frame] {
 				test.Compare(t, "framesNeeded", framesNeeded, 2)
-				return slices.NewIterator([]runtime.Frame{frame1, frame2})
+				return NewIterator([]runtime.Frame{frame1, frame2})
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
+		t.Log(testCase.name)
 		trace := &trace{
 			mockTrace: mockTrace{
 				mockGetFrames: testCase.getFrames,
@@ -464,15 +522,15 @@ func TestString(t *testing.T) {
 			expectedString: "1\n2\n3\n",
 		},
 		{
-			text: nil,
+			text:           nil,
 			expectedString: "",
 		},
 		{
-			text: []string{},
+			text:           []string{},
 			expectedString: "",
 		},
 		{
-			text: []string{"1"},
+			text:           []string{"1"},
 			expectedString: "1\n",
 		},
 	}

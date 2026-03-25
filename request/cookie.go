@@ -45,7 +45,7 @@ func getCookie[T any](c *Cookie, name string, convert func(string) (T, error)) *
 	}
 
 	v, err := convert(cookie.Value)
-	if e, ok := err.(errors.WrongTypeErr); ok {
+	if e, ok := err.(*errors.WrongTypeErr); ok {
 		c.h.AddError(errors.NewWrongFieldTypeErr(name, e.Type))
 		return NewRequestBuilder[T](c.h).Create()
 	}
