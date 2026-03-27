@@ -100,7 +100,7 @@ func TestGetValues(t *testing.T) {
 
 func TestGetFiles(t *testing.T) {
 	fieldName := "field1"
-	files := []test.MockMultipartFile{
+	files := []*test.MockMultipartFile{
 		{
 			Name:    "file1",
 			Content: "content1",
@@ -110,7 +110,7 @@ func TestGetFiles(t *testing.T) {
 
 	type Dependecies struct {
 		parseError       error
-		values           []test.MockMultipartFile
+		values           []*test.MockMultipartFile
 		isValuesExpected bool
 	}
 
@@ -119,7 +119,7 @@ func TestGetFiles(t *testing.T) {
 	}
 
 	type Output struct {
-		expectedValues   []test.MockMultipartFile
+		expectedValues   []*test.MockMultipartFile
 		expectedFatalErr error
 		expectedErr      error
 	}
@@ -323,9 +323,9 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGetFile(t *testing.T) {
+func Test_getFiles(t *testing.T) {
 	fatalErr := errors.New("fatal error")
-	files := []test.MockMultipartFile{
+	files := []*test.MockMultipartFile{
 		{
 			Name:    "file1",
 			Content: "content1",
@@ -340,7 +340,7 @@ func TestGetFile(t *testing.T) {
 		parseForm func() error
 		getFile   func(string) ([]*multipart.FileHeader, bool)
 		name      string
-		files     []test.MockMultipartFile
+		files     []*test.MockMultipartFile
 		fatalErr  error
 		err       error
 	}{
@@ -384,6 +384,115 @@ func TestGetFile(t *testing.T) {
 		test.CheckMultipartFiles(t, "files", files, testCase.files)
 		test.CompareErrors(t, "fatalErr", fatalErr, testCase.fatalErr)
 		test.CompareCustomErrors(t, "err", err, testCase.err)
+	}
+}
+
+func TestGetFile(t *testing.T) {
+	fatalErr := errors.New("fatal error")
+	err := errors.New("err")
+	files := []*test.MockMultipartFile{
+		{
+			Name:    "1",
+			Content: "",
+		},
+		{
+			Name:    "1",
+			Content: "new",
+		},
+		{
+			Name:    "file",
+			Content: "simple content",
+		},
+	}
+	testCases := []struct {
+		testCaseName string
+		fieldName    string
+		FatalErr     func() error
+		getFiles     func(string) ([]*multipart.FileHeader, error, error)
+		file         *test.MockMultipartFile
+		fatalErr     error
+		err          error
+	}{
+		{
+			testCaseName: "check with fatalErr",
+			FatalErr: func() error {
+				return fatalErr
+			},
+			fatalErr: fatalErr,
+		},
+		{
+			testCaseName: "check with getFiles fatalErr",
+			FatalErr: func() error {
+				return nil
+			},
+			getFiles: func(fieldName string) ([]*multipart.FileHeader, error, error) {
+				test.Compare(t, "fieldName", fieldName, "")
+				return nil, fatalErr, nil
+			},
+			fatalErr:  fatalErr,
+			fieldName: "",
+		},
+		{
+			testCaseName: "check with getFiles return simple err",
+			FatalErr: func() error {
+				return nil
+			},
+			getFiles: func(fieldName string) ([]*multipart.FileHeader, error, error) {
+				test.Compare(t, "fieldName", fieldName, "field1")
+				return nil, nil, err
+			},
+			err:       err,
+			fieldName: "field1",
+		},
+		{
+			testCaseName: "check with files len > 1",
+			FatalErr: func() error {
+				return nil
+			},
+			getFiles: func(fieldName string) ([]*multipart.FileHeader, error, error) {
+				test.Compare(t, "fieldName", fieldName, "s")
+				files := test.MockMultipartFiles(t, "files", files)
+				t.Log("len files:", len(files))
+				return files, nil, nil
+			},
+			err:       errors.NewWrongValueSizeError("s", len(files), "1"),
+			fieldName: "s",
+		},
+		{
+			testCaseName: "check sucessfull case",
+			FatalErr: func() error {
+				return nil
+			},
+			getFiles: func(fieldName string) ([]*multipart.FileHeader, error, error) {
+				test.Compare(t, "fieldName", fieldName, "s")
+				multipartFiles := test.MockMultipartFiles(t, "files", []*test.MockMultipartFile{files[0]})
+				return multipartFiles, nil, nil
+			},
+			fieldName: "s",
+			file:      files[0],
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.testCaseName)
+		addFatalErr := func(fatalErr error) {
+			test.CompareCustomErrors(t, "fatalErr", fatalErr, testCase.fatalErr)
+		}
+		addErr := func(err error) {
+			test.CompareCustomErrors(t, "err", err, testCase.err)
+		}
+		form := &MockForm{
+			MockErrorContainer: errors.MockErrorContainer{
+				MockFatalErr:      testCase.FatalErr,
+				MockAddFatalError: addFatalErr,
+				MockAddError:      addErr,
+			},
+			mockGetFiles: testCase.getFiles,
+		}
+
+		request := getFile(form, testCase.fieldName)
+		test.CheckMultipartFiles(t, "value", []*multipart.FileHeader{request.value},
+			[]*test.MockMultipartFile{testCase.file})
 	}
 }
 
@@ -450,7 +559,7 @@ func TestGetSlice(t *testing.T) {
 				return values, nil, nil
 			},
 			convertValues: nil,
-			convertErr: errors.NewWrongTypeErr("string"),
+			convertErr:    errors.NewWrongTypeErr("string"),
 			addError: func(err error) {
 				test.CompareCustomErrors(t, "err", err, errors.NewWrongFieldTypeErr("b", "string"))
 			},
@@ -465,7 +574,7 @@ func TestGetSlice(t *testing.T) {
 				return values, nil, nil
 			},
 			convertValues: nil,
-			convertErr: errors.New("convert error"),
+			convertErr:    errors.New("convert error"),
 			addError: func(err error) {
 				test.CompareCustomErrors(t, "err", err, errors.NewUnknownErr(errors.New("convert error")))
 			},
@@ -480,8 +589,8 @@ func TestGetSlice(t *testing.T) {
 				return values, nil, nil
 			},
 			convertValues: []int{1},
-			convertErr: nil,
-			name: "b",
+			convertErr:    nil,
+			name:          "b",
 		},
 		{
 			fatalErr: func() error {
@@ -492,8 +601,8 @@ func TestGetSlice(t *testing.T) {
 				return []string{"1", "-2", "203"}, nil, nil
 			},
 			convertValues: []int{1, -2, 203},
-			convertErr: nil,
-			name: "b",
+			convertErr:    nil,
+			name:          "b",
 		},
 	}
 

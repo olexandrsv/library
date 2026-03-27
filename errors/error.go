@@ -44,11 +44,13 @@ type customError struct {
 }
 
 func NewCustomError(err error, message string, userMessage Response) CustomError {
+	t := trace.New(-1)
+	fmt.Printf("custom error frames: %+v\n", t.Frames())
 	return customError{
 		originalErr: err,
 		message:     message,
 		t:           time.Now(),
-		trace: trace.New(-1).Format(func(f trace.Frame) string {
+		trace: t.Format(func(f trace.Frame) string {
 			return fmt.Sprintf("%s %d %s", f.File(), f.Line(), f.Function())
 		}),
 		Response: userMessage,
@@ -73,4 +75,33 @@ func (err customError) Time() time.Time {
 
 func (err customError) Trace() []string {
 	return err.trace
+}
+
+type MockCustomError struct {
+	MockError       func() string
+	MockMessage     func() string
+	MockOriginalErr func() error
+	MockTime        func() time.Time
+	MockTrace       func() []string
+	MockResponse
+}
+
+func (err MockCustomError) Error() string {
+	return err.MockError()
+}
+
+func (err MockCustomError) Message() string {
+	return err.MockMessage()
+}
+
+func (err MockCustomError) OriginalErr() error {
+	return err.MockOriginalErr()
+}
+
+func (err MockCustomError) Time() time.Time {
+	return err.MockTime()
+}
+
+func (err MockCustomError) Trace() []string {
+	return err.MockTrace()
 }

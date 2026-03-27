@@ -111,13 +111,13 @@ func NewFileErr(err error, filePath string, resp Response) *NewFileError {
 	}
 }
 
-type NewNilError struct {
+type NilError struct {
 	CustomError
 }
 
-func NewNilErr(variableName string, response Response) *NewNilError {
+func NewNilErr(variableName string, response Response) *NilError {
 	msg := fmt.Sprintf("variable '%s' can't be nil", variableName)
-	return &NewNilError{
+	return &NilError{
 		CustomError: NewCustomError(nil, msg, response),
 	}
 }

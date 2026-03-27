@@ -471,11 +471,6 @@ func TestLoadFrames(t *testing.T) {
 			},
 		},
 		{
-			name:         "check with framesNeeded 0",
-			framesNeeded: 0,
-			frames:       nil,
-		},
-		{
 			name:         "check with getFrames returning nil",
 			framesNeeded: 1,
 			frames:       nil,

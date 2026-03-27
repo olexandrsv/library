@@ -78,9 +78,6 @@ func (t *trace) loadFrames(framesNeeded int) {
 		t.mockLoadFrames(framesNeeded)
 		return
 	}
-	if framesNeeded < 1 {
-		return
-	}
 	runtimeFrames := t.getFrames(framesNeeded)
 	frames := IteratorToSlice(runtimeFrames)
 	for _, frame := range frames {

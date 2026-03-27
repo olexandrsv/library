@@ -65,6 +65,10 @@ func (f *form) GetInt(name string) *ValueRequest[int] {
 	return get(f, name, ToInt)
 }
 
+func (f *form) GetFile(name string) *ValueRequest[*multipart.FileHeader]{
+	return getFile(f, name)
+}
+
 func get[T any](f Form, name string, convert func(string) (T, error)) *ValueRequest[T] {
 	if f.FatalErr() != nil {
 		return NewRequestBuilder[T](f).Create()
@@ -96,12 +100,12 @@ func get[T any](f Form, name string, convert func(string) (T, error)) *ValueRequ
 	return NewRequestBuilder[T](f).WithValue(value).Create()
 }
 
-func getFile(f Form, name string) *ValueRequest[*multipart.FileHeader] {
+func getFile(f Form, fieldName string) *ValueRequest[*multipart.FileHeader] {
 	if f.FatalErr() != nil {
 		return NewRequestBuilder[*multipart.FileHeader](f).Create()
 	}
 
-	files, fatalErr, err := f.getFiles(name)
+	files, fatalErr, err := f.getFiles(fieldName)
 	if fatalErr != nil || err != nil {
 		f.AddFatalError(fatalErr)
 		f.AddError(err)
@@ -109,7 +113,7 @@ func getFile(f Form, name string) *ValueRequest[*multipart.FileHeader] {
 	}
 
 	if len(files) != 1 {
-		f.AddError(errors.NewWrongValueSizeError(name, len(files), "1"))
+		f.AddError(errors.NewWrongValueSizeError(fieldName, len(files), "1"))
 		return NewRequestBuilder[*multipart.FileHeader](f).Create()
 	}
 

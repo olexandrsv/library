@@ -25,6 +25,19 @@ func (err *userError) UserCode() int {
 	return err.code
 }
 
+type MockResponse struct {
+	MockUserMessage func() string
+	MockUserCode    func() int
+}
+
+func (r MockResponse) UserMessage() string {
+	return r.MockUserMessage()
+}
+
+func (r MockResponse) UserCode() int {
+	return r.MockUserCode()
+}
+
 func NewForbiddenError() Response {
 	return NewResponse("Forbidden", 403)
 }

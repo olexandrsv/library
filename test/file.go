@@ -12,7 +12,7 @@ type MockMultipartFile struct {
 	Content string
 }
 
-func MockMultipartFiles(t *testing.T, fieldName string, files []MockMultipartFile) []*multipart.FileHeader {
+func MockMultipartFiles(t *testing.T, fieldName string, files []*MockMultipartFile) []*multipart.FileHeader {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -21,7 +21,10 @@ func MockMultipartFiles(t *testing.T, fieldName string, files []MockMultipartFil
 		if err != nil {
 			t.Fatal(err)
 		}
-		part.Write([]byte(file.Content))
+		_, err = part.Write([]byte(file.Content))
+		if err != nil {
+			t.Fatal("fatal:", err)
+		}
 	}
 
 	writer.Close()
@@ -39,7 +42,7 @@ func CheckMultipartFiles(
 	t *testing.T,
 	fieldName string,
 	received []*multipart.FileHeader,
-	expected []MockMultipartFile) {
+	expected []*MockMultipartFile) {
 	if len(received) != len(expected) {
 		t.Errorf("received '%d' and expected '%d' files len does not match", len(received), len(expected))
 		return
@@ -47,6 +50,13 @@ func CheckMultipartFiles(
 	for i := range received {
 		receivedFile := received[i]
 		expectedFile := expected[i]
+		if receivedFile == nil && expectedFile == nil {
+			return
+		}
+		if receivedFile == nil || expectedFile == nil {
+			t.Errorf("expected file %v, received file %v", expectedFile, receivedFile)
+			return
+		}
 		file, err := receivedFile.Open()
 		if err != nil {
 			t.Fatal(err)

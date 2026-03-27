@@ -28,11 +28,12 @@ func testRequest() {
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	point.Save(w, r)
-	function1(1, 2)
+	//function1(1, 2)
 	req := request.New(r)
 	n := req.Form.GetInt("n").Do()
 	m := req.Form.GetInt("m").Do()
 	s := req.Form.GetString("s").Do()
+	//file := req.Form.GetFile("file").Do()
 
 	err := req.Err()
 	if err != nil {
@@ -42,6 +43,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println(n, m, s)
+	//fmt.Println("file:", file.Filename)
 }
 
 func function1(n, m int) {

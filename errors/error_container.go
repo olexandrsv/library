@@ -64,13 +64,13 @@ type MultipleErr struct {
 	Errors []error
 }
 
-func NewMultipleErr(errors []error) MultipleErr {
-	return MultipleErr{
+func NewMultipleErr(errors []error) *MultipleErr {
+	return &MultipleErr{
 		Errors: errors,
 	}
 }
 
-func (e MultipleErr) Error() string {
+func (e *MultipleErr) Error() string {
 	var b bytes.Buffer
 	for _, err := range e.Errors {
 		b.WriteString(err.Error())
