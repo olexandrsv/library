@@ -12,7 +12,7 @@ type MockMultipartFile struct {
 	Content string
 }
 
-func MockMultipartFiles(t *testing.T, fieldName string, files []*MockMultipartFile) []*multipart.FileHeader {
+func MockMultipartFiles(t testing.TB, fieldName string, files []*MockMultipartFile) []*multipart.FileHeader {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -39,7 +39,7 @@ func MockMultipartFiles(t *testing.T, fieldName string, files []*MockMultipartFi
 }
 
 func CheckMultipartFiles(
-	t *testing.T,
+	t testing.TB,
 	fieldName string,
 	received []*multipart.FileHeader,
 	expected []*MockMultipartFile) {
@@ -50,25 +50,37 @@ func CheckMultipartFiles(
 	for i := range received {
 		receivedFile := received[i]
 		expectedFile := expected[i]
-		if receivedFile == nil && expectedFile == nil {
-			return
-		}
-		if receivedFile == nil || expectedFile == nil {
-			t.Errorf("expected file %v, received file %v", expectedFile, receivedFile)
-			return
-		}
-		file, err := receivedFile.Open()
-		if err != nil {
-			t.Fatal(err)
-		}
-		bytes, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatal(err)
-		}
-		content := string(bytes)
-		if receivedFile.Filename != expectedFile.Name || content != expectedFile.Content {
-			t.Errorf("expected file with name '%s' and content '%s', but received file with name '%s' and content '%s'",
-				receivedFile.Filename, content, expectedFile.Name, expectedFile.Content)
-		}
+		CheckMultipartFile(t, fieldName, receivedFile, expectedFile)
 	}
+}
+
+func CheckMultipartFile(t testing.TB, fieldName string, received *multipart.FileHeader,
+	expected *MockMultipartFile) {
+	if received == nil && expected == nil {
+		return
+	}
+	if received == nil || expected == nil {
+		t.Errorf("expected file %v, received file %v", expected, received)
+		return
+	}
+	fileName, content, err := getData(received)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fileName != expected.Name || content != expected.Content {
+		t.Errorf("expected file with name '%s' and content '%s', but received file with name '%s' and content '%s'",
+			fileName, content, expected.Name, expected.Content)
+	}
+}
+
+func getData(fileHeader *multipart.FileHeader) (string, string, error) {
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", "", err
+	}
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return "", "", err
+	}
+	return fileHeader.Filename, string(bytes), nil
 }

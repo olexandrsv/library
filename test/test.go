@@ -4,13 +4,13 @@ import (
 	"testing"
 )
 
-func Compare[T comparable](t *testing.T, variableName string, received, expected T) {
+func Compare[T comparable](t testing.TB, variableName string, received, expected T) {
 	compare(t, "", variableName, received, expected, func(received, expected T) bool {
 		return received == expected
 	})
 }
 
-func ComparePointers[T comparable](t *testing.T, variableName string, received, expected *T) {
+func ComparePointers[T comparable](t testing.TB, variableName string, received, expected *T) {
 	compare(t, "", variableName, received, expected, func(received, expected *T) bool {
 		if received == expected {
 			return true
@@ -22,13 +22,13 @@ func ComparePointers[T comparable](t *testing.T, variableName string, received, 
 	})
 }
 
-func CompareErrors(t *testing.T, variableName string, received, expected error) {
+func CompareErrors(t testing.TB, variableName string, received, expected error) {
 	compare(t, "error", variableName, received, expected, func(received, expected error) bool {
 		return received == expected
 	})
 }
 
-func CompareCustomErrors(t *testing.T, variableName string, received, expected error) {
+func CompareCustomErrors(t testing.TB, variableName string, received, expected error) {
 	compare(t, "error", variableName, received, expected, func(received, expected error) bool {
 		if expected == received {
 			return true
@@ -55,21 +55,24 @@ func isSlicesEqual[T, K any](received []T, expected []K, isEqual func(T, K) bool
 	return true
 }
 
-func CompareSlicesWithFunc[T, K any](t *testing.T, variableName string, received []T, expected []K, isEqual func(T, K) bool) {
+func CompareSlicesWithFunc[T, K any](t testing.TB, variableName string, received []T, expected []K, isEqual func(T, K) bool) {
+	if isEqual == nil {
+		t.Fatal("isEqual can't be nil")
+	}
 	if isSlicesEqual(received, expected, isEqual) {
 		return
 	}
 	t.Errorf("unexpected slice %s: got '%#v', expected '%#v'\n", variableName, received, expected)
 }
 
-func CompareSlices[T comparable](t *testing.T, variableName string, received, expected []T) {
+func CompareSlices[T comparable](t testing.TB, variableName string, received, expected []T) {
 	CompareSlicesWithFunc(t, variableName, received, expected, func(receivedItem, expectedItem T) bool {
 		return receivedItem == expectedItem
 	})
 }
 
 func compare[T any](
-	t *testing.T,
+	t testing.TB,
 	kind, variableName string,
 	received, expected T,
 	compare func(T, T) bool) {
